@@ -18,7 +18,7 @@
 /* This module adds the following LogFormat arguments, denoted by the following
  * '%' directives:
  *
- * %...E: CPU time elapsed for the request
+ * %...E: CPU seconds elapsed for the request
  *
  */
 
