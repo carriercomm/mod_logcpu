@@ -24,7 +24,7 @@ Just compile with apxs:
 
 ... finally, define a LogFormat using the new %...E directive:
 
-	<IfModule mod_logcpu.so>
+	<IfModule mod_logcpu.c>
 		LogFormat "%t %f %E" cpulog
 		CustomLog logs/cpu_log cpulog
 	</IfModule>
