@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* This module adds the following LogFormat arguments, denoted by the following
+/*
+ * This module adds the following LogFormat arguments, denoted by the following
  * '%' directives:
  *
  * %...E: CPU seconds elapsed for the request
- *
  */
 
 #include "apr_strings.h"
