@@ -9,7 +9,11 @@ a new LogFormat directive: %...E
 
 The CPU seconds account for the total processing time inside the Apache child,
 as well as processes exec()'d or fork()'d by the Apache child on a per request
-basis. This has been tested with mpm_event running PHP with suPHP.
+basis.
+
+mod_logcpu has been tested with Apache 2.2, but it should work on Apache 2.X.
+It's been successfully tested with mpm_event running PHP with suPHP, as well as
+mpm_prefork running PHP with mod_php.
 
 This should allow accurate process accounting even when mod_php is being used
 to serve requests. It can also augment process accounting by tracking CPU
