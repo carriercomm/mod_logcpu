@@ -48,10 +48,17 @@ static int start_clock(request_rec *r)
  */
 static const char *log_cpu_elapsed(request_rec *r, char *a)
 {
-	long start = atol(apr_table_get(r->notes, "logcpu_clock_start"));
-	double elapsed = ((double) clock() - start) / CLOCKS_PER_SEC;
+	const char *cpu_start_note = apr_table_get(r->notes, "logcpu_clock_start");
 
-	return apr_psprintf(r->pool, "%f", elapsed);
+	if (cpu_start_note != NULL) {
+		long start = atol(cpu_start_note);
+		double elapsed = ((double) clock() - start) / CLOCKS_PER_SEC;
+
+		return apr_psprintf(r->pool, "%.2f", elapsed);
+	}
+	else {
+		return "-"
+	}
 }
 
 /*
@@ -77,7 +84,7 @@ static void logcpu_hooks(apr_pool_t *p)
 	static const char *pre[] = { "mod_log_config.c", NULL };
 
 	ap_hook_pre_config(logcpu_pre_config, NULL, NULL, APR_HOOK_REALLY_FIRST);
-	ap_hook_handler(start_clock, NULL, NULL, APR_HOOK_FIRST);
+	ap_hook_handler(start_clock, NULL, NULL, APR_HOOK_REALLY_FIRST);
 }
 
 /*
