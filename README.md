@@ -7,9 +7,9 @@ What is it?
 mod_logcpu adds the ability to include elapsed CPU seconds per request using
 a new LogFormat directive: %...E
 
-This logs CPU seconds for forked processes, as well as requests handled
-exclusively by the Apache children themselves (e.g. mod_php). This has been
-tested with mpm_event and mpm_prefork, both of which work.
+This logs CPU seconds for requests handled exclusively by the Apache children
+themselves (e.g. mod_php). This has been tested with mpm_event and mpm_prefork,
+both of which work.
 
 Installation & Configuration
 ----------------------------

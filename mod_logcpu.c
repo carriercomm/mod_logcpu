@@ -20,6 +20,7 @@
  * '%' directives:
  *
  * %...E: CPU seconds elapsed for the request
+ *
  */
 
 #include "apr_strings.h"
