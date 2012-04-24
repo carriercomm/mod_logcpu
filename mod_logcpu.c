@@ -57,7 +57,7 @@ static const char *log_cpu_elapsed(request_rec *r, char *a)
 		return apr_psprintf(r->pool, "%.2f", elapsed);
 	}
 	else {
-		return "-"
+		return "-";
 	}
 }
 
