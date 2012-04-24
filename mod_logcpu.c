@@ -24,7 +24,6 @@
  */
 
 #include "apr_strings.h"
-#include "apr_tables.h"
 #include "apr_optional.h"
 
 #include "mod_log_config.h"
@@ -32,16 +31,24 @@
 #include "http_core.h"
 #include "http_config.h"
 
-#include <time.h>
+#include <sys/times.h>
+#include <unistd.h>
+
+/* CPU clock running total for the child */
+static double cumulative = 0.0;
 
 /*
- * Sets the clock start value in the request notes
+ * Gets the current CPU clock total using times()
  */
-static int start_clock(request_rec *r)
+static clock_t get_total_cpu()
 {
-	apr_table_set(r->notes, "logcpu_clock_start", apr_ltoa(r->pool, clock()));
+	struct tms cpu_time;
+	times(&cpu_time);
 
-	return DECLINED;
+	clock_t parent_time = cpu_time.tms_utime + cpu_time.tms_stime;
+	clock_t child_time = cpu_time.tms_cutime + cpu_time.tms_cstime;
+
+	return (parent_time + child_time);
 }
 
 /*
@@ -49,17 +56,13 @@ static int start_clock(request_rec *r)
  */
 static const char *log_cpu_elapsed(request_rec *r, char *a)
 {
-	const char *cpu_start_note = apr_table_get(r->notes, "logcpu_clock_start");
+	/* Wait for any children to finish before continuing */
+	wait(NULL);
 
-	if (cpu_start_note != NULL) {
-		long start = atol(cpu_start_note);
-		double elapsed = ((double) clock() - start) / CLOCKS_PER_SEC;
+	double elapsed = (double)(get_total_cpu() - cumulative);
+	cumulative += elapsed;
 
-		return apr_psprintf(r->pool, "%.2f", elapsed);
-	}
-	else {
-		return "-";
-	}
+	return apr_psprintf(r->pool, "%.2f", elapsed / sysconf(_SC_CLK_TCK));
 }
 
 /*
@@ -85,7 +88,6 @@ static void logcpu_hooks(apr_pool_t *p)
 	static const char *pre[] = { "mod_log_config.c", NULL };
 
 	ap_hook_pre_config(logcpu_pre_config, NULL, NULL, APR_HOOK_REALLY_FIRST);
-	ap_hook_handler(start_clock, NULL, NULL, APR_HOOK_REALLY_FIRST);
 }
 
 /*
@@ -100,4 +102,3 @@ module AP_MODULE_DECLARE_DATA logcpu_module = {
 	NULL,
 	logcpu_hooks
 };
-
