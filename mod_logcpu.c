@@ -80,7 +80,8 @@ static const char *log_cpu_elapsed(request_rec *r, char *a)
 		apr_thread_mutex_lock(logcpu_cumulative_lock);
 	}
 	else {
-		apr_proc_wait_all_procs(NULL, NULL, NULL, APR_WAIT, p);
+		apr_proc_t pr;
+		apr_proc_wait_all_procs(&pr, NULL, NULL, APR_WAIT, NULL);
 	}
 
 	clock_t elapsed = get_total_cpu() - cumulative;
