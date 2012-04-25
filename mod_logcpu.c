@@ -24,18 +24,29 @@
  */
 
 #include "apr_strings.h"
+#include "apr_tables.h"
+#include "apr_pools.h"
+#include "apr_thread_proc.h"
 #include "apr_optional.h"
 
 #include "mod_log_config.h"
 #include "httpd.h"
 #include "http_core.h"
 #include "http_config.h"
+#include "ap_mpm.h"
 
 #include <sys/times.h>
+#include <sys/resource.h>
 #include <unistd.h>
 
-/* CPU clock running total for the child */
-static double cumulative = 0.0;
+#include "mod_logcpu.h"
+
+/*
+ * Per child variables
+ */
+static int mpm_is_threaded = 0;
+static clock_t cumulative = 0;
+static apr_thread_mutex_t *logcpu_cumulative_lock = NULL;
 
 /*
  * Gets the current CPU clock total using times()
@@ -56,13 +67,27 @@ static clock_t get_total_cpu()
  */
 static const char *log_cpu_elapsed(request_rec *r, char *a)
 {
-	/* Wait for any children to finish before continuing */
-	wait(NULL);
+	struct apr_pool_t *p = r->pool;
 
-	double elapsed = (double)(get_total_cpu() - cumulative);
+	if (mpm_is_threaded) {
+		struct process_chain *pc = p->subprocesses;
+
+		if (pc && pc->proc)
+			apr_proc_wait(pc->proc, NULL, NULL, APR_WAIT);
+
+		apr_thread_mutex_lock(logcpu_cumulative_lock);
+	}
+	else {
+		apr_proc_wait_all_procs(NULL, NULL, NULL, APR_WAIT, p);
+	}
+
+	clock_t elapsed = get_total_cpu() - cumulative;
 	cumulative += elapsed;
 
-	return apr_psprintf(r->pool, "%.2f", elapsed / sysconf(_SC_CLK_TCK));
+	if (mpm_is_threaded)
+		apr_thread_mutex_unlock(logcpu_cumulative_lock);
+
+	return apr_psprintf(p, "%.2f", (double)elapsed / sysconf(_SC_CLK_TCK));
 }
 
 /*
@@ -81,6 +106,17 @@ static int logcpu_pre_config(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *ptemp)
 }
 
 /*
+ * Figure out threading for the current MPM and setup the mutex if necessary
+ */
+static void logcpu_child_init(apr_pool_t *p, server_rec *s)
+{
+	ap_mpm_query(AP_MPMQ_IS_THREADED, &mpm_is_threaded);
+
+	if (mpm_is_threaded)
+		apr_thread_mutex_create(&logcpu_cumulative_lock, APR_THREAD_MUTEX_DEFAULT, p);
+}
+
+/*
  * Apache 2.X hooks
  */
 static void logcpu_hooks(apr_pool_t *p)
@@ -88,6 +124,7 @@ static void logcpu_hooks(apr_pool_t *p)
 	static const char *pre[] = { "mod_log_config.c", NULL };
 
 	ap_hook_pre_config(logcpu_pre_config, NULL, NULL, APR_HOOK_REALLY_FIRST);
+	ap_hook_child_init(logcpu_child_init, NULL, NULL, APR_HOOK_FIRST);
 }
 
 /*

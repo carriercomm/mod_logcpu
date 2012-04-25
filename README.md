@@ -12,8 +12,9 @@ as well as processes exec()'d or fork()'d by the Apache child on a per request
 basis.
 
 mod_logcpu has been tested with Apache 2.2, but it should work on Apache 2.X.
-It's been successfully tested with mpm_event running PHP with suPHP, as well as
-mpm_prefork running PHP with mod_php.
+It's been successfully tested with mpm_event running PHP with suPHP, but should
+work with any MPM and any handler assuming the handler is processed either as a
+child of the Apache child, or within the Apache child itself (e.g. mod_php).
 
 This should allow accurate process accounting even when mod_php is being used
 to serve requests. It can also augment process accounting by tracking CPU
