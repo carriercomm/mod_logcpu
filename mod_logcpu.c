@@ -75,9 +75,8 @@ static const char *log_cpu_elapsed(request_rec *r, char *a)
 		struct process_chain *pc = p->subprocesses;
 
 		if (pc && pc->proc) {
-			while (apr_proc_wait(pc->proc, NULL, NULL, APR_NOWAIT) != APR_CHILD_DONE
-					&& !r->connection->aborted) {
-				continue;
+			while (apr_proc_wait(pc->proc, NULL, NULL, APR_NOWAIT) != APR_CHILD_DONE) {
+				sleep(1);
 			}
 		}
 
@@ -85,9 +84,8 @@ static const char *log_cpu_elapsed(request_rec *r, char *a)
 	}
 	else {
 		apr_proc_t pr;
-		while (apr_proc_wait_all_procs(&pr, NULL, NULL, APR_NOWAIT, NULL) != APR_CHILD_DONE
-				&& !r->connection->aborted) {
-			continue;
+		while (apr_proc_wait_all_procs(&pr, NULL, NULL, APR_NOWAIT, NULL) != APR_CHILD_DONE) {
+			sleep(1);
 		}
 	}
 
